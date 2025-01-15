@@ -1,0 +1,167 @@
+<html>
+
+<head>
+    <title>Task-2</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+
+</head>
+
+<body style="background-color: darkgray; color: black;">
+
+<label><center><h1><b>Product Verification using Blockchain QR Hash</b></h1></center></label>
+
+<form id="dataForm">
+<label> Enter Product__________Id: </label>
+<input type="number" id="product_id"><br><br>
+<label> Enter Product_______Name: </label>
+<input type="text" id="product_name"><br><br>
+<label> Enter Manufacturing__Date: </label>
+<input type="text" id="product_m_date"><br><br>
+<label> Enter Product_______Batch: </label>
+<input type="text" id="product_batch"><br><br>
+<label> QR Code_______________: </label>
+<input type="text" id="product_qr_code" size="110"><br><br>
+
+<button type="submit">Add Product</button>
+
+</form>
+
+<button id="getProductButton">Fetch Product</button><br><br>
+<button id="getQR">Get QR</button>
+<button id="verify">Verify Product</button><br><br>
+
+<label style="font-weight: bold; font-size: medium;"  id="pd_id_display"><b></b>  </label><br>
+<label style="font-weight: bold; font-size: medium;" id="pd_name_display">  </label><br>
+<label style="font-weight: bold; font-size: medium;" id="pd_md_display">  </label><br>
+<label style="font-weight: bold; font-size: medium;" id="pd_batch_display">  </label><br>
+<label style="font-weight: bold; font-size: medium;" id="pd_hash_display"></label>
+
+
+
+
+
+
+
+<script>
+
+document.getElementById('dataForm').addEventListener('submit', function (event) {
+	event.preventDefault(); 
+
+	const p_id = document.getElementById("product_id").value;
+    const p_name = document.getElementById("product_name").value;
+    const p_m_date = document.getElementById("product_m_date").value;
+    const p_batch = document.getElementById("product_batch").value;
+
+	
+	fetch('http://localhost:3001/api/data', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({ p_id, p_name, p_m_date, p_batch }),
+	})
+	.then(response => response.json())
+	.then(data => {
+		console.log(data);
+		alert(data.message); 
+	})
+	.catch(error => console.error('Error:', error));
+});
+
+
+document.getElementById('getProductButton').addEventListener('click', function () {
+    const p_id = document.getElementById("product_id").value; 
+
+    
+    fetch(`http://localhost:3001/api/getData/${p_id}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+        } else {
+            document.getElementById("pd_id_display").textContent = "Product ID: " + data.p_id;
+            document.getElementById("pd_name_display").textContent = "Product Name: " + data.p_name;
+            document.getElementById("pd_md_display").textContent = "Manufacturing Date: " + data.p_m_date;
+            document.getElementById("pd_batch_display").textContent = "Product Batch: " + data.p_batch;
+            document.getElementById("pd_hash_display").textContent = "Product Hash: " + data.p_hash;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error fetching product data.');
+    });
+});
+
+
+
+document.getElementById('getQR').addEventListener('click', function () {
+    const p_id = document.getElementById("product_id").value;
+
+    if (!p_id) {
+        alert('Please enter a Product ID.');
+        return;
+    }
+
+    console.log(`Requesting QR code for Product ID: ${p_id}`); 
+
+    fetch(`http://localhost:3001/api/getQR/${p_id}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Received QR Code:', data);  
+
+            if (data.qrCodeText) {
+                document.getElementById("product_qr_code").value = data.qrCodeText;
+                alert('QR Code fetched successfully!');
+            } else if (data.message) {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error fetching QR code.');
+        });
+});
+
+
+document.getElementById('verify').addEventListener('click', function () {
+    const p_id = document.getElementById("product_id").value.trim();
+    const p_qr = document.getElementById("product_qr_code").value.trim();
+
+    if (!p_id || !p_qr) {
+        alert('Please enter both Product ID and QR code.');
+        return;
+    }
+
+    console.log(`Verifying Product ID: ${p_id} and QR Code: ${p_qr}`);
+
+    
+    fetch('http://localhost:3001/api/verify', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ p_id, p_qr }),
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Verification Response:', data);
+            alert(data.message); 
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error verifying the product.');
+        });
+});
+
+
+
+</script>
+</body>
+
+
+</html>
